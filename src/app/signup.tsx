@@ -1,9 +1,62 @@
-
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
+import { api } from "@/services/api"
+import { storage } from "@/services/storage"
+import { useRouter } from "expo-router"
+import { useState } from "react"
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 
 export default function Signup(){
+    const router = useRouter()
+    const [nome, setNome] = useState("")
+    const [email, setEmail] = useState("")
+    const [telefone, setTelefone] = useState("")
+    const [senha, setSenha] = useState("")
+    const [confirmarSenha, setConfirmarSenha] = useState("")
+    const [loading, setLoading] = useState(false)
+
+    const handleCadastro = async () => {
+        // Validações
+        if (!nome.trim() || !email.trim() || !telefone.trim() || !senha.trim() || !confirmarSenha.trim()) {
+            Alert.alert("Erro", "Por favor, preencha todos os campos")
+            return
+        }
+
+        if (senha !== confirmarSenha) {
+            Alert.alert("Erro", "As senhas não coincidem")
+            return
+        }
+
+        if (senha.length < 6) {
+            Alert.alert("Erro", "A senha deve ter no mínimo 6 caracteres")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const response = await api.cadastro({
+                nome,
+                email,
+                telefone,
+                senha,
+                confirmarSenha
+            })
+            
+            if (response.sucesso && response.token) {
+                await storage.saveToken(response.token)
+                if (response.usuario) {
+                    await storage.saveUser(response.usuario)
+                }
+                Alert.alert("Sucesso", response.mensagem)
+                router.replace("/home")
+            }
+        } catch (error: any) {
+            Alert.alert("Erro", error.message || "Erro ao cadastrar")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return(
         <KeyboardAvoidingView style={{flex:1}} behavior={Platform.select({ios: "padding",android:"height"})}>
         <ScrollView 
@@ -20,13 +73,47 @@ export default function Signup(){
        <Text style ={style.title}>Cadastrar </Text>
 
        <View style={style.form}>
-         <Input placeholder="Nome Completo" />
-         <Input placeholder="E-mail" keyboardType="email-address" />
-         <Input placeholder="Telefone" keyboardType="numeric"/>
-         <Input placeholder="Senha" secureTextEntry />
-         <Input placeholder="Confirmar Senha" secureTextEntry />
+         <Input 
+            placeholder="Nome Completo" 
+            value={nome}
+            onChangeText={setNome}
+            editable={!loading}
+         />
+         <Input 
+            placeholder="E-mail" 
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!loading}
+         />
+         <Input 
+            placeholder="Telefone" 
+            keyboardType="numeric"
+            value={telefone}
+            onChangeText={setTelefone}
+            editable={!loading}
+         />
+         <Input 
+            placeholder="Senha" 
+            secureTextEntry
+            value={senha}
+            onChangeText={setSenha}
+            editable={!loading}
+         />
+         <Input 
+            placeholder="Confirmar Senha" 
+            secureTextEntry
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            editable={!loading}
+         />
 
-         <Button label={"Cadastrar"} />
+         <Button 
+            label={loading ? "Cadastrando..." : "Cadastrar"} 
+            onPress={handleCadastro}
+            disabled={loading}
+         />
+         {loading && <ActivityIndicator size="small" color="#15104D" style={{marginTop: 10}} />}
        </View>
 
        <Text style ={style.footerText}>

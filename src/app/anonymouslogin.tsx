@@ -1,8 +1,64 @@
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
+import { api } from "@/services/api"
+import { storage } from "@/services/storage"
+import { useRouter } from "expo-router"
+import { useState } from "react"
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 
 export default function AnonymousLogin(){
+    const router = useRouter()
+    const [telefone, setTelefone] = useState("")
+    const [codigo, setCodigo] = useState("")
+    const [codigoEnviado, setCodigoEnviado] = useState(false)
+    const [loading, setLoading] = useState(false)
+
+    const handleEnviarCodigo = async () => {
+        if (!telefone.trim()) {
+            Alert.alert("Erro", "Por favor, informe o número de telefone")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const response = await api.cadastroAnonimo({ telefone })
+            
+            if (response.sucesso) {
+                Alert.alert("Sucesso", response.mensagem)
+                setCodigoEnviado(true)
+            }
+        } catch (error: any) {
+            Alert.alert("Erro", error.message || "Erro ao enviar código")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleValidarCodigo = async () => {
+        if (!codigo.trim()) {
+            Alert.alert("Erro", "Por favor, informe o código de verificação")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const response = await api.validarCodigoAnonimo({ telefone, codigo })
+            
+            if (response.sucesso && response.token) {
+                await storage.saveToken(response.token)
+                if (response.usuario) {
+                    await storage.saveUser(response.usuario)
+                }
+                Alert.alert("Sucesso", response.mensagem)
+                router.replace("/home")
+            }
+        } catch (error: any) {
+            Alert.alert("Erro", error.message || "Código inválido ou expirado")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return(
         <KeyboardAvoidingView style={{flex:1}} behavior={Platform.select({ios: "padding",android:"height"})}>
         <ScrollView 
@@ -13,8 +69,50 @@ export default function AnonymousLogin(){
        <Text style ={style.subtitle}>Enviaremos um código de verificação por SMS para confirmar seu número.</Text>
        </View>
        <View style={style.form}>
-          <Input placeholder="Telefone"/>
-          <Button label={"Receber Código"} />
+          {!codigoEnviado ? (
+              <>
+                  <Input 
+                      placeholder="Telefone"
+                      keyboardType="numeric"
+                      value={telefone}
+                      onChangeText={setTelefone}
+                      editable={!loading}
+                  />
+                  <Button 
+                      label={loading ? "Enviando..." : "Receber Código"} 
+                      onPress={handleEnviarCodigo}
+                      disabled={loading}
+                  />
+              </>
+          ) : (
+              <>
+                  <Text style={style.infoText}>
+                      Código enviado para {telefone}
+                  </Text>
+                  <Input 
+                      placeholder="Código de verificação"
+                      keyboardType="numeric"
+                      value={codigo}
+                      onChangeText={setCodigo}
+                      editable={!loading}
+                      maxLength={6}
+                  />
+                  <Button 
+                      label={loading ? "Validando..." : "Validar Código"} 
+                      onPress={handleValidarCodigo}
+                      disabled={loading}
+                  />
+                  <Button 
+                      label="Reenviar Código" 
+                      onPress={() => {
+                          setCodigoEnviado(false)
+                          setCodigo("")
+                      }}
+                      disabled={loading}
+                  />
+              </>
+          )}
+          {loading && <ActivityIndicator size="small" color="#15104D" style={{marginTop: 10}} />}
        </View>
        </View>
        </ScrollView>
@@ -58,5 +156,12 @@ const style = StyleSheet.create({
         textAlign: "center",
         marginTop:24,
         color:"#000000"
+    },
+    infoText: {
+        textAlign: "center",
+        color: "#15104D",
+        fontSize: 14,
+        marginBottom: 10,
+        fontWeight: "500"
     },
 })
