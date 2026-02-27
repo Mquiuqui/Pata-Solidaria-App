@@ -4,10 +4,26 @@ import { api } from "@/services/api"
 import { storage } from "@/services/storage"
 import { useRouter } from "expo-router"
 import { useState } from "react"
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    useWindowDimensions,
+    View,
+} from "react-native"
+
+const PADDING_H = 24
+const PADDING_V = 20
+const MIN_BOX_HEIGHT = 100
+const MAX_FORM_WIDTH = 400
 
 export default function AnonymousLogin(){
     const router = useRouter()
+    const { width: screenWidth } = useWindowDimensions()
     const [telefone, setTelefone] = useState("")
     const [codigo, setCodigo] = useState("")
     const [codigoEnviado, setCodigoEnviado] = useState(false)
@@ -21,12 +37,12 @@ export default function AnonymousLogin(){
 
         setLoading(true)
         try {
-            const response = await api.cadastroAnonimo({ telefone })
-            
-            if (response.sucesso) {
-                Alert.alert("Sucesso", response.mensagem)
-                setCodigoEnviado(true)
-            }
+            await api.solicitarCodigoAnonimo({ telefone })
+            setCodigoEnviado(true)
+            Alert.alert(
+                "Código enviado",
+                "Se o número estiver correto, você receberá um código por SMS."
+            )
         } catch (error: any) {
             Alert.alert("Erro", error.message || "Erro ao enviar código")
         } finally {
@@ -43,32 +59,43 @@ export default function AnonymousLogin(){
         setLoading(true)
         try {
             const response = await api.validarCodigoAnonimo({ telefone, codigo })
-            
-            if (response.sucesso && response.token) {
+
+            if (response.token) {
                 await storage.saveToken(response.token)
                 if (response.usuario) {
                     await storage.saveUser(response.usuario)
                 }
-                Alert.alert("Sucesso", response.mensagem)
                 router.replace("/home")
             }
         } catch (error: any) {
-            Alert.alert("Erro", error.message || "Código inválido ou expirado")
+            Alert.alert("Erro", error.message || "Código inválido ou expirado. Solicite um novo.")
         } finally {
             setLoading(false)
         }
     }
 
-    return(
-        <KeyboardAvoidingView style={{flex:1}} behavior={Platform.select({ios: "padding",android:"height"})}>
-        <ScrollView 
-        contentContainerStyle ={{flexGrow: 1}} keyboardShouldPersistTaps="handled">
-     <View style={style.container }>
-         <View style={style.retangulo}>
-       <Text style ={style.subtitle}>Para Realizar o Login anônimo solicitamos que informe seu número.</Text>
-       <Text style ={style.subtitle}>Enviaremos um código de verificação por SMS para confirmar seu número.</Text>
-       </View>
-       <View style={style.form}>
+    const contentWidth = Math.min(screenWidth - PADDING_H * 2, MAX_FORM_WIDTH)
+    const isNarrow = screenWidth < 360
+
+    return (
+        <KeyboardAvoidingView style={styles.wrapper} behavior={Platform.select({ ios: "padding", android: "height" })}>
+            <ScrollView
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingHorizontal: isNarrow ? 16 : PADDING_H, paddingVertical: isNarrow ? 16 : PADDING_V },
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={[styles.retangulo, { width: contentWidth, minHeight: MIN_BOX_HEIGHT }]}>
+                    <Text style={styles.subtitle}>
+                        Para realizar o login anônimo solicitamos que informe seu número.
+                    </Text>
+                    <Text style={styles.subtitle}>
+                        Enviaremos um código de verificação por SMS para confirmar seu número.
+                    </Text>
+                </View>
+                <View style={[styles.form, { width: contentWidth }]}>
           {!codigoEnviado ? (
               <>
                   <Input 
@@ -86,7 +113,7 @@ export default function AnonymousLogin(){
               </>
           ) : (
               <>
-                  <Text style={style.infoText}>
+                  <Text style={styles.infoText}>
                       Código enviado para {telefone}
                   </Text>
                   <Input 
@@ -112,56 +139,51 @@ export default function AnonymousLogin(){
                   />
               </>
           )}
-          {loading && <ActivityIndicator size="small" color="#15104D" style={{marginTop: 10}} />}
-       </View>
-       </View>
-       </ScrollView>
-       </KeyboardAvoidingView>
+                    {loading && (
+                        <ActivityIndicator size="small" color="#15104D" style={styles.loader} />
+                    )}
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     )
 }
 
-const style = StyleSheet.create({
-    container:{
+const styles = StyleSheet.create({
+    wrapper: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center', 
         backgroundColor: "#F2F1FA",
-        padding:32,
     },
-     retangulo: {
-    width: '97%',            
-    height: 150,
-    padding:15,
-    backgroundColor: '#D9D9D9', 
-    borderRadius: 15,
-  },
-    title: {
-        fontSize: 32,
-        fontWeight: 900,
-         color:"#15104D",
+    scrollContent: {
+        flexGrow: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100%",
     },
-       subtitle: {
-        padding:10,
+    retangulo: {
+        padding: 16,
+        backgroundColor: "#D9D9D9",
+        borderRadius: 15,
+    },
+    subtitle: {
+        paddingVertical: 6,
+        paddingHorizontal: 4,
         textAlign: "center",
         color: "#000000",
-        fontWeight: 600,
-        fontSize: 16,
-
+        fontWeight: "600",
+        fontSize: 15,
     },
-    form:{
-        marginTop:24,
-        gap: 10,
-    },
-    footerText:{
-        textAlign: "center",
-        marginTop:24,
-        color:"#000000"
+    form: {
+        marginTop: 24,
+        gap: 12,
     },
     infoText: {
         textAlign: "center",
         color: "#15104D",
         fontSize: 14,
         marginBottom: 10,
-        fontWeight: "500"
+        fontWeight: "500",
+    },
+    loader: {
+        marginTop: 10,
     },
 })

@@ -45,12 +45,41 @@ export interface ValidarCodigoAnonimoRequest {
   codigo: string;
 }
 
+/** Formato de erro da API (ex.: login anônimo) */
+export interface ApiErrorItem {
+  code?: string;
+  message: string;
+  field?: string | null;
+  type?: string;
+}
+
+export interface ApiErrorResponse {
+  errors?: ApiErrorItem[];
+  mensagem?: string;
+}
+
+/** Resposta de sucesso do validar-codigo (login anônimo) */
+export interface ValidarCodigoAnonimoResponse {
+  sucesso: boolean;
+  mensagem: string | null;
+  token: string;
+  usuario: UsuarioDto;
+  isAnonimo: boolean;
+}
+
+function getErrorMessage(data: ApiErrorResponse | null, status: number): string {
+  if (!data) return `Erro na requisição (${status})`;
+  if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+    return data.errors[0].message;
+  }
+  return data.mensagem || `Erro na requisição (${status})`;
+}
+
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
-  
   const defaultHeaders = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -58,29 +87,38 @@ async function fetchApi<T>(
 
   try {
     console.log(`[API] Fazendo requisição: ${options.method || 'GET'} ${url}`);
-    
+
     const response = await fetch(url, {
       ...options,
       headers: defaultHeaders,
     });
 
-    const data = await response.json();
+    // 204 No Content: corpo vazio, não fazer parse
+    if (response.status === 204) {
+      console.log(`[API] Sucesso: 204 No Content`);
+      return {} as T;
+    }
+
+    const text = await response.text();
+    const data = text ? (JSON.parse(text) as ApiErrorResponse | T) : null;
 
     if (!response.ok) {
-      console.error(`[API] Erro ${response.status}:`, data);
-      throw new Error(data.mensagem || `Erro na requisição (${response.status})`);
+      const errData = data as ApiErrorResponse | null;
+      console.error(`[API] Erro ${response.status}:`, errData);
+      throw new Error(getErrorMessage(errData, response.status));
     }
 
     console.log(`[API] Sucesso:`, data);
-    return data;
+    return data as T;
   } catch (error: any) {
     console.error(`[API] Erro na requisição para ${url}:`, error);
-    
-    // Se for erro de rede (sem resposta do servidor)
+
     if (error.message === 'Network request failed' || error.message.includes('fetch')) {
-      throw new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando em http://localhost:5163');
+      throw new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
     }
-    
+    if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+      throw new Error('Resposta inválida do servidor.');
+    }
     throw error;
   }
 }
@@ -107,20 +145,20 @@ export const api = {
   },
 
   /**
-   * Inicia cadastro anônimo enviando código de verificação
+   * Login anônimo – solicita código por SMS (retorna 204 No Content)
    */
-  async cadastroAnonimo(data: CadastroAnonimoRequest): Promise<ApiResponse> {
-    return fetchApi<ApiResponse>('/cadastro-anonimo', {
+  async solicitarCodigoAnonimo(data: CadastroAnonimoRequest): Promise<void> {
+    await fetchApi<Record<string, never>>('/login-anonimo/solicitar-codigo', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
   /**
-   * Valida código de verificação e completa login anônimo
+   * Login anônimo – valida código e retorna token + usuário
    */
-  async validarCodigoAnonimo(data: ValidarCodigoAnonimoRequest): Promise<ApiResponse> {
-    return fetchApi<ApiResponse>('/validar-codigo-anonimo', {
+  async validarCodigoAnonimo(data: ValidarCodigoAnonimoRequest): Promise<ValidarCodigoAnonimoResponse> {
+    return fetchApi<ValidarCodigoAnonimoResponse>('/login-anonimo/validar-codigo', {
       method: 'POST',
       body: JSON.stringify(data),
     });
