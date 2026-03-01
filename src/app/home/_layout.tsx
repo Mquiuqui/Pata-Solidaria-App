@@ -1,3 +1,4 @@
+import { SelectedLocationProvider } from "@/contexts/SelectedLocationContext"
 import { Tabs } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useEffect, useState } from "react"
@@ -26,6 +27,7 @@ export default function HomeTabLayout() {
     }, [])
 
     return (
+        <SelectedLocationProvider>
         <Tabs
             screenOptions={{
                 headerShown: false,
@@ -81,7 +83,14 @@ export default function HomeTabLayout() {
                     href: null,
                 }}
             />
+            <Tabs.Screen
+                name="selecionar-local"
+                options={{
+                    href: null,
+                }}
+            />
         </Tabs>
+        </SelectedLocationProvider>
     )
 }
 

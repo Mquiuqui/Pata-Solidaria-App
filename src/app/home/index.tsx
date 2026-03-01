@@ -5,6 +5,7 @@ import { storage } from "@/services/storage"
 import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useCallback, useEffect, useState } from "react"
+import { useFocusEffect } from "@react-navigation/native"
 import {
     ActivityIndicator,
     Alert,
@@ -63,14 +64,11 @@ export default function MapaScreen() {
         }
     }, [])
 
-    useEffect(() => {
-        carregarAnimais()
-    }, [carregarAnimais])
-
-    const handleLogout = async () => {
-        await storage.clear()
-        router.replace("/login")
-    }
+    useFocusEffect(
+        useCallback(() => {
+            carregarAnimais()
+        }, [carregarAnimais])
+    )
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -102,14 +100,6 @@ export default function MapaScreen() {
                             <Ionicons name="arrow-back" size={22} color={PRIMARY} />
                         </TouchableOpacity>
                     )}
-                    <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={handleLogout}
-                        activeOpacity={0.8}
-                        accessibilityLabel="Sair"
-                    >
-                        <Ionicons name="log-out-outline" size={22} color={PRIMARY} />
-                    </TouchableOpacity>
                 </View>
             </View>
 

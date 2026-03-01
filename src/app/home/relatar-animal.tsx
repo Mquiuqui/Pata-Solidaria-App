@@ -1,12 +1,14 @@
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
+import { useSelectedLocation } from "@/contexts/SelectedLocationContext"
 import { api } from "@/services/api"
 import type { CadastroAnimalPerdidoRequest } from "@/services/api"
 import { storage } from "@/services/storage"
 import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
-import * as Location from "expo-location"
 import { useCallback, useState } from "react"
+import { useFocusEffect } from "@react-navigation/native"
 import {
     ActivityIndicator,
     Alert,
@@ -22,7 +24,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context"
 
 const PRIMARY = "#15104D"
-const HEADER_BG = "#15104D"
 const CARD_BG = "#FFFFFF"
 const LABEL_COLOR = "#4A4A4A"
 const HINT_COLOR = "#8E8E93"
@@ -30,6 +31,14 @@ const BORDER_COLOR = "#E5E5EA"
 const SECTION_TITLE_COLOR = "#15104D"
 
 export default function RelatarAnimalScreen() {
+    const router = useRouter()
+    const {
+        selectedLocation,
+        clearSelectedLocation,
+        formDraft,
+        setFormDraft,
+        clearFormDraft,
+    } = useSelectedLocation()
     const [titulo, setTitulo] = useState("")
     const [tipo, setTipo] = useState("")
     const [descricao, setDescricao] = useState("")
@@ -38,6 +47,28 @@ export default function RelatarAnimalScreen() {
     const [imageBase64, setImageBase64] = useState<string | null>(null)
     const [compartilharContato, setCompartilharContato] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [selectedLat, setSelectedLat] = useState<number | null>(null)
+    const [selectedLng, setSelectedLng] = useState<number | null>(null)
+
+    useFocusEffect(
+        useCallback(() => {
+            if (formDraft) {
+                setTitulo(formDraft.titulo)
+                setTipo(formDraft.tipo)
+                setDescricao(formDraft.descricao)
+                setLocalizacao(formDraft.localizacao)
+                setDataHora(formDraft.dataHora)
+                setImageBase64(formDraft.imageBase64)
+                setCompartilharContato(formDraft.compartilharContato)
+                clearFormDraft()
+            }
+            if (selectedLocation) {
+                setSelectedLat(selectedLocation.latitude)
+                setSelectedLng(selectedLocation.longitude)
+                clearSelectedLocation()
+            }
+        }, [formDraft, selectedLocation, clearFormDraft, clearSelectedLocation])
+    )
 
     const escolherFoto = useCallback(async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -67,40 +98,39 @@ export default function RelatarAnimalScreen() {
             return
         }
         if (!localizacao.trim()) {
-            Alert.alert("Campo obrigatório", "Informe a localização.")
+            Alert.alert("Campo obrigatório", "Informe o endereço ou local.")
+            return
+        }
+        if (selectedLat == null || selectedLng == null) {
+            Alert.alert(
+                "Local obrigatório",
+                "Toque em \"Selecionar no mapa\" e marque onde o animal foi avistado."
+            )
             return
         }
 
         setLoading(true)
         try {
-            const { status } = await Location.requestForegroundPermissionsAsync()
-            let latitude = -23.5505
-            let longitude = -46.6333
-            if (status === "granted") {
-                try {
-                    const loc = await Location.getCurrentPositionAsync({
-                        accuracy: Location.Accuracy.Balanced,
-                    })
-                    latitude = loc.coords.latitude
-                    longitude = loc.coords.longitude
-                } catch {
-                    // usa padrão
-                }
-            }
-
             let telefone: string | null = null
             if (compartilharContato) {
                 const user = await storage.getUser() as { telefone?: string } | null
                 telefone = user?.telefone ?? null
             }
 
+            let descricaoEnvio = descricao.trim()
+            if (telefone) {
+                descricaoEnvio = descricaoEnvio
+                    ? `${descricaoEnvio}\n\nContato: ${telefone}`
+                    : `Contato: ${telefone}`
+            }
+
             const body: CadastroAnimalPerdidoRequest = {
                 titulo: titulo.trim(),
                 tipo: tipo.trim(),
                 endereco: localizacao.trim(),
-                latitude,
-                longitude,
-                descricao: descricao.trim() || undefined,
+                latitude: selectedLat,
+                longitude: selectedLng,
+                descricao: descricaoEnvio || undefined,
                 imageBase64: imageBase64 || undefined,
                 telefone: telefone ?? undefined,
             }
@@ -113,13 +143,15 @@ export default function RelatarAnimalScreen() {
             setDataHora("")
             setImageBase64(null)
             setCompartilharContato(false)
+            setSelectedLat(null)
+            setSelectedLng(null)
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Erro ao cadastrar relato."
             Alert.alert("Erro", msg)
         } finally {
             setLoading(false)
         }
-    }, [titulo, tipo, descricao, localizacao, imageBase64, compartilharContato])
+    }, [titulo, tipo, descricao, localizacao, imageBase64, compartilharContato, selectedLat, selectedLng])
 
     function FieldLabel({
         label,
@@ -144,9 +176,6 @@ export default function RelatarAnimalScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Cadastro relato animal</Text>
-            </View>
             <KeyboardAvoidingView
                 style={styles.keyboard}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -204,6 +233,41 @@ export default function RelatarAnimalScreen() {
                             placeholderTextColor={HINT_COLOR}
                             style={styles.input}
                         />
+                        <FieldLabel label="Ponto no mapa" required />
+                        <TouchableOpacity
+                            style={styles.mapButton}
+                            onPress={() => {
+                                setFormDraft({
+                                    titulo,
+                                    tipo,
+                                    descricao,
+                                    localizacao,
+                                    dataHora,
+                                    imageBase64,
+                                    compartilharContato,
+                                })
+                                router.push("/home/selecionar-local")
+                            }}
+                            disabled={loading}
+                            activeOpacity={0.85}
+                        >
+                            <Ionicons
+                                name="location"
+                                size={22}
+                                color={selectedLat != null ? PRIMARY : HINT_COLOR}
+                            />
+                            <Text
+                                style={[
+                                    styles.mapButtonText,
+                                    selectedLat != null && styles.mapButtonTextSelected,
+                                ]}
+                            >
+                                {selectedLat != null && selectedLng != null
+                                    ? `Local selecionado: ${selectedLat.toFixed(5)}, ${selectedLng.toFixed(5)}`
+                                    : "Selecionar no mapa onde o animal foi avistado"}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={20} color={HINT_COLOR} />
+                        </TouchableOpacity>
                         <FieldLabel label="Data e hora (opcional)" />
                         <Input
                             placeholder="dd/mm/aaaa - 00:00"
@@ -303,19 +367,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#F2F1FA",
     },
-    header: {
-        backgroundColor: HEADER_BG,
-        paddingVertical: 18,
-        paddingHorizontal: 20,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    headerTitle: {
-        fontSize: 17,
-        fontWeight: "700",
-        color: "#fff",
-        letterSpacing: 0.3,
-    },
     keyboard: {
         flex: 1,
     },
@@ -365,6 +416,27 @@ const styles = StyleSheet.create({
         backgroundColor: "#FAFAFA",
         paddingHorizontal: 14,
         fontSize: 16,
+    },
+    mapButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        height: 48,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        backgroundColor: "#FAFAFA",
+        paddingHorizontal: 14,
+        marginTop: 6,
+    },
+    mapButtonText: {
+        flex: 1,
+        fontSize: 16,
+        color: HINT_COLOR,
+    },
+    mapButtonTextSelected: {
+        color: PRIMARY,
+        fontWeight: "500",
     },
     inputMultiline: {
         minHeight: 96,

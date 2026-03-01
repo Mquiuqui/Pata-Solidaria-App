@@ -1,5 +1,4 @@
 import { Button } from "@/components/Button"
-import { ButtonSocial } from "@/components/ButtonSocial"
 import { Input } from "@/components/Input"
 import { api } from "@/services/api"
 import { storage } from "@/services/storage"
@@ -80,14 +79,11 @@ export default function Login(){
             disabled={loading}
          />
          {loading && <ActivityIndicator size="small" color="#15104D" style={{marginTop: 10}} />}
-         <Text style = {style.footer}> Ou faça login com </Text>
          <Button 
             label={"Entrada Rápida"} 
             onPress={handleEntradaRapida}
             disabled={loading}
          />
-         <ButtonSocial label={"Continue com Google"} />
-         <ButtonSocial label={"Continue com Facebook"} />
        </View>
 
        <Text style ={style.footerText}>
@@ -137,10 +133,5 @@ const style = StyleSheet.create({
     footerLink:{
         color:"#15104D",
         fontWeight: 700,
-    },
-    footer:{
-        textAlign: "center",
-        color:"#15104D",
-    
     },
 })
