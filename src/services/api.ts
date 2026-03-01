@@ -72,6 +72,21 @@ export interface AnimalPerdido {
   descricao?: string | null;
   imageBase64?: string | null;
   dataCriacao: string;
+  /** Preenchido quando o usuário optou por compartilhar contato no cadastro */
+  telefone?: string | null;
+}
+
+/** Body do POST /api/animais-perdidos (cadastro) */
+export interface CadastroAnimalPerdidoRequest {
+  titulo: string;
+  tipo: string;
+  endereco: string;
+  latitude: number;
+  longitude: number;
+  descricao?: string | null;
+  imageBase64?: string | null;
+  /** Enviado quando "Deseja compartilhar seu contato" está marcado */
+  telefone?: string | null;
 }
 
 /** Resposta de sucesso do validar-codigo (login anônimo) */
@@ -210,6 +225,27 @@ export const api = {
       const text = await response.text();
       const data = text ? JSON.parse(text) as ApiErrorResponse : null;
       const msg = data?.errors?.[0]?.message ?? data?.mensagem ?? `Erro ${response.status}`;
+      throw new Error(msg);
+    }
+    return response.json();
+  },
+
+  /**
+   * Cadastra um animal perdido
+   * POST /api/animais-perdidos
+   */
+  async cadastrarAnimalPerdido(data: CadastroAnimalPerdidoRequest): Promise<AnimalPerdido> {
+    const url = ANIMAIS_PERDIDOS_BASE;
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: defaultHeaders,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      const dataErr = text ? JSON.parse(text) as ApiErrorResponse : null;
+      const msg = dataErr?.errors?.[0]?.message ?? dataErr?.mensagem ?? `Erro ${response.status}`;
       throw new Error(msg);
     }
     return response.json();

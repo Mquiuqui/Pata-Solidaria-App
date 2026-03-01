@@ -180,6 +180,13 @@ export default function RelatoAnimalScreen() {
                             <Text style={styles.linkMaps}>Abrir no Google Maps</Text>
                         </Text>
                     </TouchableOpacity>
+                    {animal.telefone ? (
+                        <View style={styles.contatoRow}>
+                            <Ionicons name="call" size={18} color={TEXT_MUTED} />
+                            <Text style={styles.contatoLabel}>Contato: </Text>
+                            <Text style={styles.contatoTelefone}>{animal.telefone}</Text>
+                        </View>
+                    ) : null}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -280,6 +287,21 @@ const styles = StyleSheet.create({
         color: TEXT_MUTED,
     },
     linkMaps: {
+        color: PRIMARY,
+        fontWeight: "600",
+    },
+    contatoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 16,
+        gap: 6,
+    },
+    contatoLabel: {
+        fontSize: 15,
+        color: TEXT_MUTED,
+    },
+    contatoTelefone: {
+        fontSize: 15,
         color: PRIMARY,
         fontWeight: "600",
     },
