@@ -1,9 +1,13 @@
 import { Button } from "@/components/Button"
+import { api } from "@/services/api"
+import type { AnimalPerdido } from "@/services/api"
 import { storage } from "@/services/storage"
 import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
+    ActivityIndicator,
+    Alert,
     Platform,
     StyleSheet,
     Text,
@@ -11,7 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native"
-import MapView from "react-native-maps"
+import MapView, { Marker } from "react-native-maps"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 const HEADER_BG = "#F2F1FA"
@@ -29,7 +33,23 @@ export default function MapaScreen() {
     const router = useRouter()
     const [search, setSearch] = useState("")
     const [isAnonymous, setIsAnonymous] = useState(false)
+    const [animais, setAnimais] = useState<AnimalPerdido[]>([])
+    const [loadingAnimais, setLoadingAnimais] = useState(true)
     const canGoBack = router.canGoBack?.() ?? false
+
+    const carregarAnimais = useCallback(async () => {
+        setLoadingAnimais(true)
+        try {
+            const lista = await api.listarAnimaisPerdidos()
+            setAnimais(lista)
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Erro ao carregar animais"
+            Alert.alert("Erro", msg)
+            setAnimais([])
+        } finally {
+            setLoadingAnimais(false)
+        }
+    }, [])
 
     useEffect(() => {
         let mounted = true
@@ -42,6 +62,10 @@ export default function MapaScreen() {
             mounted = false
         }
     }, [])
+
+    useEffect(() => {
+        carregarAnimais()
+    }, [carregarAnimais])
 
     const handleLogout = async () => {
         await storage.clear()
@@ -98,12 +122,33 @@ export default function MapaScreen() {
                         </Text>
                     </View>
                 ) : (
+                    <>
                     <MapView
                         style={styles.map}
                         initialRegion={REGIAO_INICIAL}
                         showsUserLocation
                         showsMyLocationButton
-                    />
+                    >
+                        {animais.map((animal) => (
+                            <Marker
+                                key={animal.id}
+                                coordinate={{
+                                    latitude: animal.latitude,
+                                    longitude: animal.longitude,
+                                }}
+                                title={animal.titulo}
+                                description={animal.tipo + (animal.endereco ? ` · ${animal.endereco}` : "")}
+                                onPress={() => router.push(`/home/animal/${animal.id}`)}
+                            />
+                        ))}
+                    </MapView>
+                    {loadingAnimais && (
+                        <View style={styles.loadingOverlay}>
+                            <ActivityIndicator size="large" color={PRIMARY} />
+                            <Text style={styles.loadingText}>Carregando animais...</Text>
+                        </View>
+                    )}
+                    </>
                 )}
             </View>
 
@@ -161,6 +206,18 @@ const styles = StyleSheet.create({
         backgroundColor: SEARCH_BG,
         alignItems: "center",
         justifyContent: "center",
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(242,241,250,0.9)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    loadingText: {
+        marginTop: 8,
+        fontSize: 14,
+        color: PRIMARY,
+        fontWeight: "500",
     },
     mapContainer: {
         flex: 1,

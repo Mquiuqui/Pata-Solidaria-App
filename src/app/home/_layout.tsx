@@ -75,6 +75,12 @@ export default function HomeTabLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen
+                name="animal/[id]"
+                options={{
+                    href: null,
+                }}
+            />
         </Tabs>
     )
 }

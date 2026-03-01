@@ -2,6 +2,9 @@ import { API_BASE_URL } from '@/config/api.config';
 
 const BASE_URL = API_BASE_URL;
 
+/** Base URL da API de animais perdidos (mesmo host, path /api/animais-perdidos) */
+const ANIMAIS_PERDIDOS_BASE = API_BASE_URL.replace(/\/api\/usuario\/?$/, '') + '/api/animais-perdidos';
+
 // Log da URL base sendo usada (apenas em desenvolvimento)
 if (__DEV__) {
   console.log(`[API] URL Base configurada: ${BASE_URL}`);
@@ -56,6 +59,19 @@ export interface ApiErrorItem {
 export interface ApiErrorResponse {
   errors?: ApiErrorItem[];
   mensagem?: string;
+}
+
+/** Animal perdido (listagem e busca) – ver contexto-animais.md */
+export interface AnimalPerdido {
+  id: number;
+  titulo: string;
+  tipo: string;
+  endereco: string;
+  latitude: number;
+  longitude: number;
+  descricao?: string | null;
+  imageBase64?: string | null;
+  dataCriacao: string;
 }
 
 /** Resposta de sucesso do validar-codigo (login anônimo) */
@@ -162,5 +178,40 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  /**
+   * Lista todos os animais perdidos (para markers no mapa)
+   * GET /api/animais-perdidos
+   */
+  async listarAnimaisPerdidos(): Promise<AnimalPerdido[]> {
+    const url = ANIMAIS_PERDIDOS_BASE;
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    const response = await fetch(url, { method: 'GET', headers: defaultHeaders });
+    if (!response.ok) {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) as ApiErrorResponse : null;
+      const msg = data?.errors?.[0]?.message ?? data?.mensagem ?? `Erro ${response.status}`;
+      throw new Error(msg);
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Busca um animal perdido por id
+   * GET /api/animais-perdidos/Busca?id={id}
+   */
+  async buscarAnimalPerdidoPorId(id: number): Promise<AnimalPerdido> {
+    const url = `${ANIMAIS_PERDIDOS_BASE}/Busca?id=${id}`;
+    const defaultHeaders = { 'Content-Type': 'application/json' };
+    const response = await fetch(url, { method: 'GET', headers: defaultHeaders });
+    if (!response.ok) {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) as ApiErrorResponse : null;
+      const msg = data?.errors?.[0]?.message ?? data?.mensagem ?? `Erro ${response.status}`;
+      throw new Error(msg);
+    }
+    return response.json();
   },
 };
