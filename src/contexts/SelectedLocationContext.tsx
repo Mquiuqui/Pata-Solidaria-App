@@ -5,7 +5,6 @@ type SelectedLocation = {
     longitude: number
 } | null
 
-/** Rascunho do formulário Relatar Animal, usado ao voltar de "Selecionar no mapa" */
 export type RelatarAnimalDraft = {
     titulo: string
     tipo: string

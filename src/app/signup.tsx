@@ -16,7 +16,6 @@ export default function Signup(){
     const [loading, setLoading] = useState(false)
 
     const handleCadastro = async () => {
-        // Validações
         if (!nome.trim() || !email.trim() || !telefone.trim() || !senha.trim() || !confirmarSenha.trim()) {
             Alert.alert("Erro", "Por favor, preencha todos os campos")
             return

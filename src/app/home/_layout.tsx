@@ -89,6 +89,18 @@ export default function HomeTabLayout() {
                     href: null,
                 }}
             />
+            <Tabs.Screen
+                name="procurar-ongs"
+                options={{
+                    href: null,
+                }}
+            />
+            <Tabs.Screen
+                name="publicacao/[id]"
+                options={{
+                    href: null,
+                }}
+            />
         </Tabs>
         </SelectedLocationProvider>
     )

@@ -187,7 +187,6 @@ export default function RelatarAnimalScreen() {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Dados do animal */}
                     <SectionTitle title="Dados do animal" />
                     <View style={styles.card}>
                         <FieldLabel label="Título do relato" required first />
@@ -221,7 +220,6 @@ export default function RelatarAnimalScreen() {
                         />
                     </View>
 
-                    {/* Localização */}
                     <SectionTitle title="Localização" />
                     <View style={styles.card}>
                         <FieldLabel label="Endereço ou local" required first />
@@ -279,7 +277,6 @@ export default function RelatarAnimalScreen() {
                         />
                     </View>
 
-                    {/* Foto */}
                     <SectionTitle title="Foto" />
                     <TouchableOpacity
                         style={styles.fotoCard}
@@ -312,7 +309,6 @@ export default function RelatarAnimalScreen() {
                         )}
                     </TouchableOpacity>
 
-                    {/* Contato */}
                     <SectionTitle title="Contato" />
                     <View style={styles.card}>
                         <TouchableOpacity

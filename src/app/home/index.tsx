@@ -146,9 +146,7 @@ export default function MapaScreen() {
                 <View style={styles.footer}>
                     <Button
                         label="Procurar ONGs"
-                        onPress={() => {
-                            // TODO: navegar para busca de ONGs ou filtrar no mapa
-                        }}
+                        onPress={() => router.push("/home/procurar-ongs")}
                     />
                 </View>
             )}
