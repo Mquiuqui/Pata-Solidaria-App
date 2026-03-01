@@ -63,7 +63,9 @@ export default function AnonymousLogin(){
             if (response.token) {
                 await storage.saveToken(response.token)
                 if (response.usuario) {
-                    await storage.saveUser(response.usuario)
+                    await storage.saveUser({ ...response.usuario, anonimo: true })
+                } else {
+                    await storage.saveUser({ anonimo: true })
                 }
                 router.replace("/home")
             }
