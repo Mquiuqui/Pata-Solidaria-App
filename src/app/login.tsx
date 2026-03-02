@@ -86,11 +86,12 @@ export default function Login(){
          />
        </View>
 
-       <Text style ={style.footerText}>
-        Ainda não possui uma conta? {"  "}
-        <Link href="/anonymouslogin" style= {style.footerLink} >
-        Crie aqui.</Link> 
-        </Text>
+       <Text style={style.footerText}>
+        Ainda não possui uma conta?{" "}
+        <Link href="/signup" style={style.footerLink}>
+          Cadastrar
+        </Link>
+       </Text>
        </View>
        </ScrollView>
        </KeyboardAvoidingView>

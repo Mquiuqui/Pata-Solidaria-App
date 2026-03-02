@@ -2,7 +2,7 @@ import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { api } from "@/services/api"
 import { storage } from "@/services/storage"
-import { useRouter } from "expo-router"
+import { Link, useRouter } from "expo-router"
 import { useState } from "react"
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native"
 
@@ -26,8 +26,8 @@ export default function Signup(){
             return
         }
 
-        if (senha.length < 6) {
-            Alert.alert("Erro", "A senha deve ter no mínimo 6 caracteres")
+        if (senha.length < 5) {
+            Alert.alert("Erro", "A senha deve ter no mínimo 5 caracteres")
             return
         }
 
@@ -115,10 +115,12 @@ export default function Signup(){
          {loading && <ActivityIndicator size="small" color="#15104D" style={{marginTop: 10}} />}
        </View>
 
-       <Text style ={style.footerText}>
-       Já tem uma conta? {"  "}
-        Entre aqui.
-        </Text>
+       <Text style={style.footerText}>
+        Já tem uma conta?{" "}
+        <Link href="/login" style={style.footerLink}>
+          Entrar
+        </Link>
+       </Text>
        </View>
        </ScrollView>
        </KeyboardAvoidingView>
@@ -157,8 +159,8 @@ const style = StyleSheet.create({
         marginTop:24,
         color:"#000000"
     },
-    footerLink:{
-        color:"#f36d95",
-        fontWeight: 700,
+    footerLink: {
+        color: "#15104D",
+        fontWeight: "700",
     },
 })

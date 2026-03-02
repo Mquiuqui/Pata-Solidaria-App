@@ -11,6 +11,15 @@ export interface UsuarioDto {
   telefone: string
   isAnonimo: boolean
   telefoneVerificado: boolean
+  fotoPerfil?: string | null
+  sobreMim?: string | null
+}
+
+export interface AtualizarPerfilRequest {
+  nome: string
+  email: string
+  fotoPerfil?: string | null
+  sobreMim?: string | null
 }
 
 export interface ApiResponse {
@@ -176,6 +185,40 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     })
+  },
+
+  async obterPerfil(token: string): Promise<UsuarioDto> {
+    const url = `${BASE_URL}/perfil`
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      const data = text ? (JSON.parse(text) as ApiErrorResponse) : null
+      throw new Error(getErrorMessage(data, response.status))
+    }
+    return response.json() as Promise<UsuarioDto>
+  },
+
+  async atualizarPerfil(token: string, data: AtualizarPerfilRequest): Promise<void> {
+    const url = `${BASE_URL}/perfil`
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      const dataErr = text ? (JSON.parse(text) as ApiErrorResponse) : null
+      throw new Error(getErrorMessage(dataErr, response.status))
+    }
   },
 
   async listarAnimaisPerdidos(): Promise<AnimalPerdido[]> {
