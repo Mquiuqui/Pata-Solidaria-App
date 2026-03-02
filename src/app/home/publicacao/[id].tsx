@@ -59,7 +59,8 @@ export default function PublicacaoScreen() {
         carregar()
     }, [carregar])
 
-    const ongNome = publicacao?.ong?.nome ?? (publicacao ? `ONG ${publicacao.ongId}` : "")
+    const nomeOngApi = publicacao?.nomeOng ?? undefined
+    const ongNome = nomeOngApi ?? publicacao?.ong?.nome ?? (publicacao ? `ONG ${publicacao.ongId}` : "")
 
     if (loading) {
         return (
@@ -101,9 +102,9 @@ export default function PublicacaoScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.body}>
-                    <View style={styles.tag}>
-                        <Ionicons name="paw" size={14} color={PRIMARY} />
-                        <Text style={styles.tagText}>{ongNome}</Text>
+                    <View style={styles.ongRow}>
+                        <Text style={styles.ongLabel}>Publicado por: </Text>
+                        <Text style={styles.ongNome}>{ongNome}</Text>
                     </View>
 
                     {publicacao.titulo ? (
@@ -189,23 +190,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: BORDER,
     },
-    tag: {
+    ongRow: {
         flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start",
-        backgroundColor: CARD_BG,
-        borderWidth: 1,
-        borderColor: BORDER,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        flexWrap: "wrap",
+        alignItems: "baseline",
         marginBottom: 12,
-        gap: 6,
     },
-    tagText: {
-        fontSize: 13,
+    ongLabel: {
+        fontSize: 14,
         color: TEXT_MUTED,
         fontWeight: "500",
+    },
+    ongNome: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: PRIMARY,
     },
     titulo: {
         fontSize: 20,

@@ -79,6 +79,7 @@ export interface AnimalPerdido {
 export interface Publicacao {
   id: number
   ongId: number
+  nomeOng?: string | null
   titulo: string
   conteudo: string
   imagemBase64?: string | null
@@ -88,6 +89,36 @@ export interface Publicacao {
   dataAtualizacao?: string | null
   ativo: boolean
   ong?: { id: number; nome?: string; [key: string]: unknown } | null
+}
+
+/** Normaliza publicação da API (PascalCase, nomeOng, ong) para o formato do app. */
+function normalizarPublicacao(raw: Record<string, unknown>): Publicacao {
+  const ongRaw = raw.ong ?? raw.Ong
+  const nomeFromOng =
+    ongRaw && typeof ongRaw === "object"
+      ? (ongRaw as Record<string, unknown>).nome ??
+        (ongRaw as Record<string, unknown>).Nome ??
+        undefined
+      : undefined
+  const nomeOng =
+    (raw.nomeOng as string | undefined) ??
+    (raw.NomeOng as string | undefined) ??
+    nomeFromOng ??
+    null
+  const ongObj =
+    ongRaw && typeof ongRaw === "object"
+      ? {
+          id: (ongRaw as Record<string, unknown>).id ?? (ongRaw as Record<string, unknown>).Id,
+          nome: nomeFromOng ?? nomeOng ?? undefined,
+        }
+      : raw.ongId != null
+        ? { id: Number(raw.ongId), nome: nomeOng ?? undefined }
+        : undefined
+  return {
+    ...raw,
+    nomeOng: nomeOng ?? undefined,
+    ong: ongObj,
+  } as Publicacao
 }
 
 export interface CadastroAnimalPerdidoRequest {
@@ -276,7 +307,8 @@ export const api = {
       throw new Error(msg)
     }
     const data = await response.json()
-    return Array.isArray(data) ? data : []
+    const lista = Array.isArray(data) ? data : []
+    return lista.map((item: Record<string, unknown>) => normalizarPublicacao(item))
   },
 
   async buscarPublicacaoPorId(id: number): Promise<Publicacao> {
@@ -289,6 +321,7 @@ export const api = {
       const msg = data?.errors?.[0]?.message ?? data?.mensagem ?? `Erro ${response.status}`
       throw new Error(msg)
     }
-    return response.json()
+    const dataPub = await response.json()
+    return normalizarPublicacao(dataPub as Record<string, unknown>)
   },
 }

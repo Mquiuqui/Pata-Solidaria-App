@@ -51,7 +51,8 @@ export default function Login(){
         style={style.ilustration}
        />
 
-       <Text style ={style.title}>Bem Vindo</Text>
+       <Text style={style.title}>Bem Vindo</Text>
+       <Text style={style.appName}>Pata Solidária</Text>
 
        <View style={style.form}>
          <Input 
@@ -115,9 +116,16 @@ const style = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 900,
-         color:"#15104D",
+        color: "#15104D",
     },
-       subtitle: {
+    appName: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#15104D",
+        marginTop: 8,
+        opacity: 0.9,
+    },
+    subtitle: {
         color: "#15104D",
         fontSize: 16,
 

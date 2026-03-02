@@ -72,12 +72,12 @@ export default function ProcurarOngsScreen() {
         return publicacoes.filter((p) => {
             const titulo = (p.titulo ?? "").toLowerCase()
             const conteudo = (p.conteudo ?? "").toLowerCase()
-            const ongNome = (p.ong?.nome ?? "").toLowerCase()
+            const ongNome = (p.nomeOng ?? p.ong?.nome ?? "").toLowerCase()
             return titulo.includes(q) || conteudo.includes(q) || ongNome.includes(q)
         })
     }, [publicacoes, search])
 
-    const ongNome = (p: Publicacao) => p.ong?.nome ?? `ONG ${p.ongId}`
+    const ongNome = (p: Publicacao) => p.nomeOng ?? p.ong?.nome ?? `ONG ${p.ongId}`
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -183,10 +183,7 @@ export default function ProcurarOngsScreen() {
                             onPress={() => router.push(`/home/publicacao/${item.id}`)}
                             activeOpacity={0.85}
                         >
-                            <View style={styles.tag}>
-                                <Ionicons name="paw" size={14} color={PRIMARY} />
-                                <Text style={styles.tagText}>{ongNome(item)}</Text>
-                            </View>
+                            <Text style={styles.cardOngNome}>{ongNome(item)}</Text>
                             {item.titulo ? (
                                 <Text style={styles.cardTitulo}>{item.titulo}</Text>
                             ) : null}
@@ -355,23 +352,11 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 12,
     },
-    tag: {
-        flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start",
-        backgroundColor: CARD_BG,
-        borderWidth: 1,
-        borderColor: BORDER,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        marginBottom: 10,
-        gap: 6,
-    },
-    tagText: {
-        fontSize: 13,
-        color: TEXT_MUTED,
-        fontWeight: "500",
+    cardOngNome: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: PRIMARY,
+        marginBottom: 8,
     },
     cardTitulo: {
         fontSize: 16,
